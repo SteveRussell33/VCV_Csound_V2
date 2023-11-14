@@ -49,14 +49,14 @@ Csound should be installed in the default location, i.e, includes files should b
 
 2) Clone from git the VCV_Csound Modules 
 
-   'git clone https://github.com/Djack13/VCV_Csound.git'.
+``git clone https://github.com/SteveRussell33/VCV_Csound_V2.git``
 
-3) Copie the VCV_Csound module directory in /Rack/plugins/
+3) Copy the VCV_Csound_V2 module directory in /Rack/plugins/
 
-4) Then cd to /Rack/plugins/VCV_Csound and compile with make
+4) Then cd to /Rack/plugins/VCV_Csound_V2 and compile with make
 
 
-All modules use csound scripts, they are located in the directory /VCV_Csound/csd/
+All modules use csound scripts, they are located in the directory /VCV_Csound_V2/csd/
 These csound scripts are often made by others and modified by me to suit my design.
 
 **Notes for Midi modules (MidiVCO-10, ...):**
