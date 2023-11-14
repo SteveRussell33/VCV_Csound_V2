@@ -38,7 +38,7 @@ struct Delay : Module {
 		NUM_OUTPUTS
 	};
 
-	Csound* csound;
+	Csound *csound;
 
 	MYFLT *spin, *spout;
 
@@ -50,7 +50,7 @@ struct Delay : Module {
 
 	float timeleft, timeright, timefineleft, timefineright, cutoff, feedback, cross, wet;
 
-	static void messageCallback(CSOUND* cs, int attr, const char *format, va_list valist) {
+	static void messageCallback(CSOUND* cs, int attr, const char* format, va_list valist) {
 		vprintf(format, valist);			//if commented -> disable csound message on terminal
 		return;
 	}
@@ -63,14 +63,12 @@ struct Delay : Module {
 		csound->SetOption((char*)"-d");
 		csound->SetHostImplementedAudioIO(1, 0);
 		notReady = csound->Compile(asset::plugin(pluginInstance, "csd/Delay.csd").c_str(), sr_override.c_str());
-		if(!notReady)
-		{
+		if (!notReady) {
 			nbSample = 0;
 			spout = csound->GetSpout();								//access csound output buffer
 			spin  = csound->GetSpin();								//access csound input buffer
 			ksmps = csound->GetKsmps();
-		}
-		else
+		} else
 			cout << "Csound csd compilation error!" << endl;
 	}
 
@@ -91,7 +89,7 @@ struct Delay : Module {
 		if (csound) {
 			dispose();
 		}
-    }
+	}
 
 	void process(const ProcessArgs& args) override;
 	void onAdd() override;
@@ -108,12 +106,13 @@ void Delay::onAdd() {
 		dispose();
 	}
 	csound = new Csound(); //Create an instance of Csound
-	csound->SetMessageCallback(messageCallback);	
+	csound->SetMessageCallback(messageCallback);
 	csoundSession();
 }
 
 void Delay::onRemove() {
 	dispose();
+	delete csound;
 }
 
 void Delay::onSampleRateChange() {
@@ -143,55 +142,54 @@ void Delay::dispose() {
 }
 
 void Delay::process(const ProcessArgs& args) {
-	
-	float out1=0.0, out2=0.0;
 
-	if(notReady) return;            //outputs set to zero
+	float out1 = 0.0, out2 = 0.0;
+
+	if (notReady) return;           //outputs set to zero
 
 	//Process
-	MYFLT in1 = clamp(inputs[IN1_INPUT].getVoltage(),-5.0f, 5.0f) * 0.2f;
-	MYFLT in2 = clamp(inputs[IN2_INPUT].getVoltage(),-5.0f, 5.0f) * 0.2f;
+	MYFLT in1 = clamp(inputs[IN1_INPUT].getVoltage(), -5.0f, 5.0f) * 0.2f;
+	MYFLT in2 = clamp(inputs[IN2_INPUT].getVoltage(), -5.0f, 5.0f) * 0.2f;
 
 	if (spin && spout) {
-		if(nbSample == 0)   //param refresh at control rate
-		{
+		if (nbSample == 0) { //param refresh at control rate
 			//params
-			if(inputs[TIMELEFT_INPUT].isConnected()) {
+			if (inputs[TIMELEFT_INPUT].isConnected()) {
 				timeleft = clamp(inputs[TIMELEFT_INPUT].getVoltage(), 0.0f, 10.0f) * 60.0f;
 			} else {
 				timeleft = params[TIMELEFT_PARAM].getValue();
 			};
-			if(inputs[TIMERIGHT_INPUT].isConnected()) {
+			if (inputs[TIMERIGHT_INPUT].isConnected()) {
 				timeright = clamp(inputs[TIMERIGHT_INPUT].getVoltage(), 0.0f, 10.0f) * 60.0f;
 			} else {
 				timeright = params[TIMERIGHT_PARAM].getValue();
 			};
-			if(inputs[TIMEFINELEFT_INPUT].isConnected()) {
+			if (inputs[TIMEFINELEFT_INPUT].isConnected()) {
 				timefineleft = clamp(inputs[TIMEFINELEFT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.5f;
 			} else {
 				timefineleft = params[TIMEFINELEFT_PARAM].getValue();
 			};
-			if(inputs[TIMEFINERIGHT_INPUT].isConnected()) {
+			if (inputs[TIMEFINERIGHT_INPUT].isConnected()) {
 				timefineright = clamp(inputs[TIMEFINERIGHT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.5f;
 			} else {
 				timefineright = params[TIMEFINERIGHT_PARAM].getValue();
 			};
-			if(inputs[CUTOFF_INPUT].isConnected()) {
+			if (inputs[CUTOFF_INPUT].isConnected()) {
 				cutoff = clamp(inputs[CUTOFF_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				cutoff = params[CUTOFF_PARAM].getValue();
 			};
-			if(inputs[FEEDBACK_INPUT].isConnected()) {
+			if (inputs[FEEDBACK_INPUT].isConnected()) {
 				feedback = clamp(inputs[FEEDBACK_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				feedback = params[FEEDBACK_PARAM].getValue();
 			};
-			if(inputs[CROSS_INPUT].isConnected()) {
+			if (inputs[CROSS_INPUT].isConnected()) {
 				cross = clamp(inputs[CROSS_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				cross = params[CROSS_PARAM].getValue();
 			};
-			if(inputs[WET_INPUT].isConnected()) {
+			if (inputs[WET_INPUT].isConnected()) {
 				wet = clamp(inputs[WET_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				wet = params[WET_PARAM].getValue();
@@ -209,19 +207,18 @@ void Delay::process(const ProcessArgs& args) {
 			result = csound->PerformKsmps();
 		}
 
-		if(!result)
-		{
+		if (!result) {
 			spin[nbSample] = in1;
 			out1 = spout[nbSample];
 			nbSample++;
 			spin[nbSample] = in2;
 			out2 = spout[nbSample];
 			nbSample++;
-			if (nbSample == ksmps*nchnls)
+			if (nbSample == ksmps * nchnls)
 				nbSample = 0;
 		}
-		outputs[OUT1_OUTPUT].setVoltage(out1*5.0);
-		outputs[OUT2_OUTPUT].setVoltage(out2*5.0);
+		outputs[OUT1_OUTPUT].setVoltage(out1 * 5.0);
+		outputs[OUT2_OUTPUT].setVoltage(out2 * 5.0);
 	}
 }
 
@@ -234,9 +231,9 @@ DelayWidget::DelayWidget(Delay *module) {
 	setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Delay.svg")));
 
 	addChild(createWidget<ScrewSilver>(Vec(15, 0)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 0)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 0)));
 	addChild(createWidget<ScrewSilver>(Vec(15, 365)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 365)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 365)));
 
 	addParam(createParam<csKnob>(Vec(45, 59), module, Delay::TIMELEFT_PARAM));
 	addParam(createParam<csKnob>(Vec(135, 59), module, Delay::TIMERIGHT_PARAM));

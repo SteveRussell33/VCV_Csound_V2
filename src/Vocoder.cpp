@@ -32,7 +32,7 @@ struct Vocoder : Module {
 		NUM_OUTPUTS
 	};
 
-	Csound* csound;
+	Csound *csound;
 
 	MYFLT *spin, *spout;
 
@@ -44,7 +44,7 @@ struct Vocoder : Module {
 
 	float bandwidth, bandspacing, base, bpGain, hpGain, carFilter, steepness, gate;
 
-	static void messageCallback(CSOUND* cs, int attr, const char *format, va_list valist) {
+	static void messageCallback(CSOUND* cs, int attr, const char* format, va_list valist) {
 		vprintf(format, valist);			//if commented -> disable csound message on terminal
 		return;
 	}
@@ -108,6 +108,7 @@ void Vocoder::onAdd() {
 
 void Vocoder::onRemove() {
 	dispose();
+	delete csound;
 }
 
 void Vocoder::onSampleRateChange() {

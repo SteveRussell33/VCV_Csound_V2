@@ -38,7 +38,7 @@ struct Chorus : Module {
 		NUM_OUTPUTS
 	};
 
-	Csound* csound;
+	Csound *csound;
 
 	MYFLT *spin, *spout;
 
@@ -50,7 +50,7 @@ struct Chorus : Module {
 
 	float delayleft, delayright, depthleft, depthright, rateleft, rateright, cross, wet;
 
-	static void messageCallback(CSOUND* cs, int attr, const char *format, va_list valist) {
+	static void messageCallback(CSOUND* cs, int attr, const char* format, va_list valist) {
 		vprintf(format, valist);			//if commented -> disable csound message on terminal
 		return;
 	}
@@ -63,14 +63,12 @@ struct Chorus : Module {
 		csound->SetOption((char*)"-d");
 		csound->SetHostImplementedAudioIO(1, 0);
 		notReady = csound->Compile(asset::plugin(pluginInstance, "csd/Chorus.csd").c_str()); /*,sr_override.c_str()*/
-		if(!notReady)
-		{
+		if (!notReady) {
 			nbSample = 0;
 			spout = csound->GetSpout();								//access csound output buffer
 			spin  = csound->GetSpin();								//access csound input buffer
 			ksmps = csound->GetKsmps();
-		}
-		else
+		} else
 			cout << "Csound csd compilation error!" << endl;
 	}
 
@@ -91,7 +89,7 @@ struct Chorus : Module {
 		if (csound) {
 			dispose();
 		}
-    }
+	}
 
 	void process(const ProcessArgs& args) override;
 	void onAdd() override;
@@ -108,12 +106,13 @@ void Chorus::onAdd() {
 		dispose();
 	}
 	csound = new Csound(); //Create an instance of Csound
-	csound->SetMessageCallback(messageCallback);	
+	csound->SetMessageCallback(messageCallback);
 	csoundSession();
 }
 
 void Chorus::onRemove() {
 	dispose();
+	delete csound;
 }
 
 void Chorus::onSampleRateChange() {
@@ -143,55 +142,54 @@ void Chorus::dispose() {
 }
 
 void Chorus::process(const ProcessArgs& args) {
-	
-	MYFLT out1=0.0, out2=0.0;
 
-	if(notReady) return;            //outputs set to zero
+	MYFLT out1 = 0.0, out2 = 0.0;
+
+	if (notReady) return;           //outputs set to zero
 
 	//Process
-	MYFLT in1 = clamp(inputs[IN1_INPUT].getVoltage(),-5.0f, 5.0f) * 0.2f;
-	MYFLT in2 = clamp(inputs[IN2_INPUT].getVoltage(),-5.0f, 5.0f) * 0.2f;
+	MYFLT in1 = clamp(inputs[IN1_INPUT].getVoltage(), -5.0f, 5.0f) * 0.2f;
+	MYFLT in2 = clamp(inputs[IN2_INPUT].getVoltage(), -5.0f, 5.0f) * 0.2f;
 
 	if (spin && spout) {
-		if(nbSample == 0)   //param refresh at control rate
-		{
+		if (nbSample == 0) { //param refresh at control rate
 			//params
-			if(inputs[DELAYLEFT_INPUT].isConnected()) {
+			if (inputs[DELAYLEFT_INPUT].isConnected()) {
 				delayleft = clamp(inputs[DELAYLEFT_INPUT].getVoltage(), 0.0f, 10.0f) * 1.95f + 0.5f;
 			} else {
 				delayleft = params[DELAYLEFT_PARAM].getValue();
 			};
-			if(inputs[DELAYRIGHT_INPUT].isConnected()) {
+			if (inputs[DELAYRIGHT_INPUT].isConnected()) {
 				delayright = clamp(inputs[DELAYRIGHT_INPUT].getVoltage(), 0.0f, 10.0f) * 1.95f + 0.5f;
 			} else {
 				delayright = params[DELAYRIGHT_PARAM].getValue();
 			};
-			if(inputs[DEPTHLEFT_INPUT].isConnected()) {
+			if (inputs[DEPTHLEFT_INPUT].isConnected()) {
 				depthleft = clamp(inputs[DEPTHLEFT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.099f;
 			} else {
 				depthleft = params[DEPTHLEFT_PARAM].getValue();
 			};
-			if(inputs[DEPTHRIGHT_INPUT].isConnected()) {
+			if (inputs[DEPTHRIGHT_INPUT].isConnected()) {
 				depthright = clamp(inputs[DEPTHRIGHT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.099f;
 			} else {
 				depthright = params[DEPTHRIGHT_PARAM].getValue();
 			};
-			if(inputs[RATELEFT_INPUT].isConnected()) {
+			if (inputs[RATELEFT_INPUT].isConnected()) {
 				rateleft = clamp(inputs[RATELEFT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				rateleft = params[RATELEFT_PARAM].getValue();
 			};
-			if(inputs[RATERIGHT_INPUT].isConnected()) {
+			if (inputs[RATERIGHT_INPUT].isConnected()) {
 				rateright = clamp(inputs[RATERIGHT_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				rateright = params[RATERIGHT_PARAM].getValue();
 			};
-			if(inputs[CROSS_INPUT].isConnected()) {
+			if (inputs[CROSS_INPUT].isConnected()) {
 				cross = clamp(inputs[CROSS_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				cross = params[CROSS_PARAM].getValue();
 			};
-			if(inputs[WET_INPUT].isConnected()) {
+			if (inputs[WET_INPUT].isConnected()) {
 				wet = clamp(inputs[WET_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 			} else {
 				wet = params[WET_PARAM].getValue();
@@ -209,19 +207,18 @@ void Chorus::process(const ProcessArgs& args) {
 			result = csound->PerformKsmps();
 		}
 
-		if(!result)
-		{
+		if (!result) {
 			spin[nbSample] = in1;
 			out1 = spout[nbSample];
 			nbSample++;
 			spin[nbSample] = in2;
 			out2 = spout[nbSample];
 			nbSample++;
-			if (nbSample == ksmps*nchnls)
+			if (nbSample == ksmps * nchnls)
 				nbSample = 0;
 		}
-		outputs[OUT1_OUTPUT].setVoltage(out1*5.0);
-		outputs[OUT2_OUTPUT].setVoltage(out2*5.0);
+		outputs[OUT1_OUTPUT].setVoltage(out1 * 5.0);
+		outputs[OUT2_OUTPUT].setVoltage(out2 * 5.0);
 	}
 }
 
@@ -234,9 +231,9 @@ ChorusWidget::ChorusWidget(Chorus *module) {
 	setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Chorus.svg")));
 
 	addChild(createWidget<ScrewSilver>(Vec(15, 0)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 0)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 0)));
 	addChild(createWidget<ScrewSilver>(Vec(15, 365)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 365)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 365)));
 
 	addParam(createParam<csKnob>(Vec(45, 59), module, Chorus::DELAYLEFT_PARAM));
 	addParam(createParam<csKnob>(Vec(135, 59), module, Chorus::DELAYRIGHT_PARAM));

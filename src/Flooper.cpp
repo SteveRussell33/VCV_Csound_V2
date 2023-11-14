@@ -31,8 +31,8 @@ struct Flooper : Module {
 		NUM_LIGHTS
 	};
 
-	Csound* csound;
-	
+	Csound *csound;
+
 	MYFLT *spin, *spout;
 
 	int nbSample = 0;
@@ -44,10 +44,10 @@ struct Flooper : Module {
 	std::string lastPath = "";
 	std::string fileDesc = "";
 	std::string filePath = "";
-	
+
 	vector<double> displayBuff;
 
-	static void messageCallback(CSOUND* cs, int attr, const char *format, va_list valist) {
+	static void messageCallback(CSOUND* cs, int attr, const char* format, va_list valist) {
 		vprintf(format, valist);    //if commented -> disable csound message on terminal
 		return;
 	}
@@ -55,8 +55,8 @@ struct Flooper : Module {
 	void csoundSession() {
 		//csd sampling-rate override
 		std::string sr_override = "--sample-rate=" + to_string(APP->engine->getSampleRate());
-		
-		//string-replace routine --> https://stackoverflow.com/questions/4643512/replace-substring-with-another-substring-c	
+
+		//string-replace routine --> https://stackoverflow.com/questions/4643512/replace-substring-with-another-substring-c
 		size_t index = 0;
 		while (true) {
 			/* Locate the substring to replace. */
@@ -68,25 +68,24 @@ struct Flooper : Module {
 
 			/* Advance index forward so the next iteration doesn't pick it up as well. */
 			index += 1;
-		}	
-		
-		//sample file load  
+		}
+
+		//sample file load
 		std::string filemacro = "--omacro:Filepath=" + filePath;
 		std::cout << "filemacro: " << filemacro << endl;
-		
+
 		//compile instance of csound
 		csound->SetOption((char*)"-n");
 		csound->SetOption((char*)"-d");
 		csound->SetHostImplementedAudioIO(1, 0);
 		notReady = csound->Compile(asset::plugin(pluginInstance, "csd/Flooper.csd").c_str(), sr_override.c_str(), filemacro.c_str());
-		if(!notReady)
-		{
+		if (!notReady) {
 			nbSample = 0;
 			spout = csound->GetSpout();							//access csound output buffer
 			spin  = csound->GetSpin();							//access csound input buffer
 			ksmps = csound->GetKsmps();
 
-			fileDesc = string::filename(filePath)+ "\n";
+			fileDesc = system::getFilename(filePath) + "\n";
 			fileDesc += std::to_string((int) csound->GetChannel("FileSr", NULL)) + " Hz" + "\n";
 			fileDesc += std::to_string(csound->GetChannel("FileLen", NULL)) + " s.";
 
@@ -95,10 +94,9 @@ struct Flooper : Module {
 			int tableSize = csound->GetTable(temp, 1);
 
 			vector<double>().swap(displayBuff);
-			for (int i=0; i < tableSize; i++)
+			for (int i = 0; i < tableSize; i++)
 				displayBuff.push_back(temp[i]);
-		}
-		else {
+		} else {
 			std::cout << "Csound csd compilation error!" << endl;
 			std::cout << "Filepath: " << filePath << endl;
 			fileDesc = "Right click to load \n a aiff, wav, ogg or flac audio file";
@@ -112,7 +110,7 @@ struct Flooper : Module {
 		configParam(TRANSPOSE_PARAM, -12.0f, 12.0f, 0.0f);
 		configParam(LOOP_PARAM, 0.0f, 1.0f, 0.0f);
 		csound = new Csound(); //Create an instance of Csound
-		csound->SetMessageCallback(messageCallback);	
+		csound->SetMessageCallback(messageCallback);
 	}
 
 	~Flooper() {
@@ -129,19 +127,19 @@ struct Flooper : Module {
 	void onReset() override;
 	void reset();
 	void dispose();
-	
+
 	void loadSample(std::string path);
 
 
 	// persistence
-	json_t *dataToJson() /*override*/ {
+	json_t *dataToJson() { /*override*/
 		json_t *rootJ = json_object();
 		// lastPath
-		json_object_set_new(rootJ, "lastPath", json_string(lastPath.c_str()));	
+		json_object_set_new(rootJ, "lastPath", json_string(lastPath.c_str()));
 		return rootJ;
 	}
 
-	void dataFromJson(json_t *rootJ) /*override*/ {
+	void dataFromJson(json_t *rootJ) { /*override*/
 		// lastPath
 		json_t *lastPathJ = json_object_get(rootJ, "lastPath");
 		if (lastPathJ) {
@@ -157,12 +155,13 @@ void Flooper::onAdd() {
 		dispose();
 	}
 	csound = new Csound(); //Create an instance of Csound
-	csound->SetMessageCallback(messageCallback);	
+	csound->SetMessageCallback(messageCallback);
 	csoundSession();
 }
 
 void Flooper::onRemove() {
 	dispose();
+	delete csound;
 }
 
 void Flooper::onSampleRateChange() {
@@ -198,34 +197,33 @@ void Flooper::loadSample(std::string path) {
 };
 
 void Flooper::process(const ProcessArgs& args) {
-	
-	MYFLT out=0.0;
 
-	if(notReady) return;            //output set to zero
+	MYFLT out = 0.0;
+
+	if (notReady) return;           //output set to zero
 
 	//Process
-	
-	if(nbSample == 0)   //param refresh at control rate
-	{
+
+	if (nbSample == 0) { //param refresh at control rate
 		//params
-		if(inputs[START_INPUT].isConnected()) {
+		if (inputs[START_INPUT].isConnected()) {
 			start = clamp(inputs[START_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 		} else {
 			start = params[START_PARAM].getValue();
 		};
 
-		if(inputs[END_INPUT].isConnected()) {
+		if (inputs[END_INPUT].isConnected()) {
 			end = clamp(inputs[END_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 		} else {
 			end = params[END_PARAM].getValue();
 		};
 
-		if(inputs[TRANSPOSE_INPUT].isConnected()) {
+		if (inputs[TRANSPOSE_INPUT].isConnected()) {
 			transpose = clamp(inputs[TRANSPOSE_INPUT].getVoltage(), 0.0f, 10.0f) * 2.4f - 12.0f;
 		} else {
 			transpose = params[TRANSPOSE_PARAM].getValue();
 		};
-		
+
 		gate = clamp(inputs[GATE_INPUT].getVoltage(), 0.0f, 10.0f) * 0.1f;
 		loop = params[LOOP_PARAM].getValue();
 
@@ -239,14 +237,13 @@ void Flooper::process(const ProcessArgs& args) {
 
 		result = csound->PerformKsmps();
 	}
-	if(!result)
-	{
+	if (!result) {
 		out = spout[nbSample];
 		nbSample++;
 		if (nbSample == ksmps)			//nchnls = 1
 			nbSample = 0;
 	}
-	outputs[OUT_OUTPUT].setVoltage(out*5.0);
+	outputs[OUT_OUTPUT].setVoltage(out * 5.0);
 }
 
 struct FlooperDisplay : TransparentWidget {			//code from Clement Foulc player module
@@ -254,13 +251,12 @@ struct FlooperDisplay : TransparentWidget {			//code from Clement Foulc player m
 	shared_ptr<Font> font;
 
 	FlooperDisplay() {
-		font = APP->window->loadFont(asset::system("res/fonts/DejaVuSans.ttf"));
 	}
 
-	void draw(const DrawArgs& args) override {
-		
-		if (module) {
-			
+	void drawLayer(const DrawArgs& args, int layer) override {
+		font = APP->window->loadFont(asset::system("res/fonts/DejaVuSans.ttf"));
+
+		if (module && font) {
 			nvgFontSize(args.vg, 12);
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 1);
@@ -273,7 +269,7 @@ struct FlooperDisplay : TransparentWidget {			//code from Clement Foulc player m
 			int start = offset + (module->start) * 160;
 			int end   = offset + (module->end)   * 160;
 			int samplePos = offset + (module->samplePos) * 160;
-			
+
 			// Draw ref line
 			{
 				nvgBeginPath(args.vg);
@@ -298,7 +294,7 @@ struct FlooperDisplay : TransparentWidget {			//code from Clement Foulc player m
 				nvgClosePath(args.vg);
 			}
 			nvgStroke(args.vg);
-			
+
 			if (module->notReady == false) {
 				// Draw play line
 				nvgStrokeColor(args.vg, nvgRGBA(0x28, 0xb0, 0xf3, 0xff));
@@ -335,11 +331,12 @@ struct FlooperDisplay : TransparentWidget {			//code from Clement Foulc player m
 				nvgMiterLimit(args.vg, 2.0);
 				nvgStrokeWidth(args.vg, 0.5);
 				//nvgGlobalCompositeOperation(args.vg, NVG_LIGHTER);
-				nvgStroke(args.vg);			
+				nvgStroke(args.vg);
 				nvgResetScissor(args.vg);
-				nvgRestore(args.vg);	
+				nvgRestore(args.vg);
 			}
 		}
+		Widget::drawLayer(args, layer);
 	}
 };
 
@@ -347,15 +344,15 @@ struct FlooperItem : MenuItem {
 	Flooper *player;
 	void onAction(const event::Action &e) override {
 		//std::string dir = asset::user("/plugins/VCV_Csound/samples");
-		
+
 		std::string dir = asset::plugin(pluginInstance, "samples/");
 		cout << "dir: " << dir << endl;
-		
+
 		char *path = osdialog_file(OSDIALOG_OPEN, dir.c_str(), NULL, NULL);
 		cout << "path: " << path << endl;
-		
+
 		if (path) player->loadSample(path);
-    	free(path);
+		free(path);
 	}
 };
 
@@ -377,9 +374,9 @@ FlooperWidget::FlooperWidget(Flooper *module) {
 	}
 
 	addChild(createWidget<ScrewSilver>(Vec(15, 0)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 0)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 0)));
 	addChild(createWidget<ScrewSilver>(Vec(15, 365)));
-	addChild(createWidget<ScrewSilver>(Vec(box.size.x-30, 365)));
+	addChild(createWidget<ScrewSilver>(Vec(box.size.x - 30, 365)));
 
 	addParam(createParam<csKnob>(Vec(45, 179), module, Flooper::START_PARAM));
 	addParam(createParam<csKnob>(Vec(135, 179), module, Flooper::END_PARAM));
