@@ -2,7 +2,7 @@
   "slug": "VCV_Csound",
   "name": "VCV_Csound",
   "version": "2.0.0.v6.18.0",
-  "license": "GNU-GPL-v3.0",
+  "license": "GPL-3.0-only",
   "brand": "dizzisound",
   "author": "dizzisound",
   "authorEmail": "",
